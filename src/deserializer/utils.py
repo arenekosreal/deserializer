@@ -14,6 +14,7 @@ from typing import TypeGuard
 from typing import TypeAliasType
 from typing import get_args
 from typing import get_origin
+from collections.abc import Iterable
 from deserializer.defines import JsonType
 from deserializer.defines import NonArgumentConstructorProtocol
 
@@ -52,10 +53,13 @@ def _check_generics(i: object, origin: Any, args: tuple[Any, ...]) -> bool:
         if _is_literal(origin):
             return i in args
         return type(i) in args
-    if _is_type_list_like(origin):
-        return is_type_match(i, args[0]) or _is_container_empty(i)
-    if _is_type_dict_like(origin):
-        return is_type_match(i, args[1]) or _is_container_empty(i)
+    if _is_type_list_like(origin) and isinstance(i, Iterable):
+        return all(is_type_match(a, args[0]) for a in i) or _is_container_empty(i)
+    if _is_type_dict_like(origin) and isinstance(i, dict):
+        return (
+                all(is_type_match(a, args[0]) for a in i)
+                and all(is_type_match(a, args[1]) for a in i.values())
+            ) or _is_container_empty(i)
     raise NotImplementedError("Unsupported type {}".format(origin))
 
 

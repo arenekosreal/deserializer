@@ -8,11 +8,13 @@ from deserializer.utils import to_valid_class
 def test_is_type_match():
     """Test is_type_match function."""
     assert is_type_match(1, int)
-    assert is_type_match(1, list[int])
-    assert is_type_match(1, dict[str, int])
+    assert is_type_match([1], list[int])
+    assert is_type_match([], list[int])
+    assert is_type_match({"1": 1}, dict[str, int])
+    assert is_type_match({}, dict[str, int])
     assert not is_type_match(1, str)
-    assert not is_type_match(1, list[str])
-    assert not is_type_match(1, dict[str, str])
+    assert not is_type_match([1], list[str])
+    assert not is_type_match({"1": 1}, dict[str, str])
 
 
 def test_is_valid_json():
