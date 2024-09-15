@@ -6,19 +6,19 @@
 
 import inspect
 from types import UnionType
-from typing import Union
 from typing import Any
+from typing import Union
 from typing import Literal
 from typing import Callable
 from typing import TypeGuard
+from typing import TypeAliasType
 from typing import get_args
 from typing import get_origin
-from typing import TypeAliasType
 from deserializer.defines import JsonType
 from deserializer.defines import NonArgumentConstructorProtocol
 
 
-CheckerType = Callable[[Any], TypeGuard[type[NonArgumentConstructorProtocol]]]
+type CheckerType = Callable[[Any], TypeGuard[type[NonArgumentConstructorProtocol]]]
 
 
 def _is_container_empty(i: object) -> bool:
@@ -104,7 +104,7 @@ def to_valid_class(
     """Convert type given to NonArgumentConstructor."""
     if checker(t):
         return t
-    if _is_union_type(t):
+    if _is_union_type(get_origin(t)):
         args = get_args(t)
         for arg in args:
             if checker(arg):
