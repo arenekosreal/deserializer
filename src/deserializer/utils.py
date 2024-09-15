@@ -7,6 +7,7 @@
 import inspect
 from types import UnionType
 from typing import Any
+from typing import Sized
 from typing import Union
 from typing import Literal
 from typing import Callable
@@ -14,7 +15,6 @@ from typing import TypeGuard
 from typing import TypeAliasType
 from typing import get_args
 from typing import get_origin
-from collections.abc import Iterable
 from deserializer.defines import JsonType
 from deserializer.defines import NonArgumentConstructorProtocol
 
@@ -23,7 +23,7 @@ type CheckerType = Callable[[Any], TypeGuard[type[NonArgumentConstructorProtocol
 
 
 def _is_container_empty(i: object) -> bool:
-    if isinstance(i, (list, set, dict)):
+    if isinstance(i, Sized):
         return len(i) == 0
     return False
 
@@ -40,12 +40,19 @@ def _is_type_args_infinite(t: Any) -> bool:
     return _is_literal(t) or _is_union_type(t) or t is tuple
 
 
-def _is_type_list_like(t: Any) -> bool:
-    return t is list or t is set
-
-
-def _is_type_dict_like(t: Any) -> bool:
-    return t is dict
+def _check_dict(
+    i: Any,
+    type_of_key: Any,
+    type_of_value: Any
+) -> bool:
+    if isinstance(i, dict):
+        for key, value in i.items():
+            if not isinstance(key, type_of_key):
+                return False
+            if not isinstance(value, type_of_value):
+                return False
+        return True
+    return False
 
 
 def _check_generics(i: object, origin: Any, args: tuple[Any, ...]) -> bool:
@@ -53,13 +60,11 @@ def _check_generics(i: object, origin: Any, args: tuple[Any, ...]) -> bool:
         if _is_literal(origin):
             return i in args
         return type(i) in args
-    if _is_type_list_like(origin) and isinstance(i, Iterable):
-        return all(is_type_match(a, args[0]) for a in i) or _is_container_empty(i)
-    if _is_type_dict_like(origin) and isinstance(i, dict):
-        return (
-                all(is_type_match(a, args[0]) for a in i)
-                and all(is_type_match(a, args[1]) for a in i.values())
-            ) or _is_container_empty(i)
+    if origin is list or origin is set:
+        value_pass = isinstance(i, (list, set)) and all(is_type_match(a, args[0]) for a in i)
+        return value_pass or _is_container_empty(i)
+    if origin is dict:
+        return _check_dict(i, args[0], args[1]) or _is_container_empty(i)
     raise NotImplementedError("Unsupported type {}".format(origin))
 
 
